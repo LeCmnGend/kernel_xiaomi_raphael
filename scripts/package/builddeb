@@ -153,6 +153,104 @@ EOF
 	chmod 755 "$tmpdir/DEBIAN/$script"
 done
 
+# Try to determine maintainer and email values
+if [ -n "$DEBEMAIL" ]; then
+       email=$DEBEMAIL
+elif [ -n "$EMAIL" ]; then
+       email=$EMAIL
+else
+       email=$(id -nu)@$(hostname -f)
+fi
+if [ -n "$DEBFULLNAME" ]; then
+       name=$DEBFULLNAME
+elif [ -n "$NAME" ]; then
+       name=$NAME
+else
+       name="Anonymous"
+fi
+maintainer="$name <$email>"
+
+# Try to determine distribution
+if [ -n "$KDEB_CHANGELOG_DIST" ]; then
+        distribution=$KDEB_CHANGELOG_DIST
+elif distribution=$(lsb_release -cs 2>/dev/null) && [ -n "$distribution" ]; then
+        : # nothing to do in this case
+else
+        distribution="unstable"
+        echo >&2 "Using default distribution of 'unstable' in the changelog"
+        echo >&2 "Install lsb-release or set \$KDEB_CHANGELOG_DIST explicitly"
+fi
+
+# Generate a simple changelog template
+cat <<EOF > debian/changelog
+linux-upstream ($packageversion) $distribution; urgency=low
+
+  * Custom built Linux kernel.
+
+ -- $maintainer  $(date -R)
+EOF
+
+# Generate copyright file
+cat <<EOF > debian/copyright
+This is a packacked upstream version of the Linux kernel.
+
+The sources may be found at most Linux ftp sites, including:
+ftp://ftp.kernel.org/pub/linux/kernel
+
+Copyright: 1991 - 2015 Linus Torvalds and others.
+
+The git repository for mainline kernel development is at:
+git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; version 2 dated June, 1991.
+
+On Debian GNU/Linux systems, the complete text of the GNU General Public
+License version 2 can be found in \`/usr/share/common-licenses/GPL-2'.
+EOF
+
+# Generate a control file
+cat <<EOF > debian/control
+Source: linux-upstream
+Section: kernel
+Priority: optional
+Maintainer: $maintainer
+Standards-Version: 3.8.4
+Homepage: http://www.kernel.org/
+EOF
+
+if [ "$ARCH" = "um" ]; then
+	cat <<EOF >> debian/control
+
+Package: $packagename
+Provides: linux-image, linux-image-2.6, linux-modules-$version
+Architecture: any
+Description: User Mode Linux kernel, version $version
+ User-mode Linux is a port of the Linux kernel to its own system call
+ interface.  It provides a kind of virtual machine, which runs Linux
+ as a user process under another Linux kernel.  This is useful for
+ kernel development, sandboxes, jails, experimentation, and
+ many other things.
+ .
+ This package contains the Linux kernel, modules and corresponding other
+ files, version: $version.
+EOF
+
+else
+	cat <<EOF >> debian/control
+
+Package: $packagename
+Provides: linux-image, linux-image-2.6, linux-modules-$version
+Suggests: $fwpackagename
+Architecture: any
+Description: Linux kernel, version $version
+ This package contains the Linux kernel, modules and corresponding other
+ files, version: $version.
+EOF
+
+fi
+
 # Build kernel header package
 (cd $srctree; find . -name Makefile\* -o -name Kconfig\* -o -name \*.pl) > "$objtree/debian/hdrsrcfiles"
 (cd $srctree; find arch/*/include include scripts -type f -o -type l) >> "$objtree/debian/hdrsrcfiles"
