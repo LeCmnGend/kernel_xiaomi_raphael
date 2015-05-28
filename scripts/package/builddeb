@@ -111,6 +111,7 @@ BUILD_DEBUG="$(grep -s '^CONFIG_DEBUG_INFO=y' $KCONFIG_CONFIG || true)"
 rm -rf "$tmpdir" "$kernel_headers_dir" "$libc_headers_dir" "$dbg_dir" $objtree/debian/files
 mkdir -m 755 -p "$tmpdir/DEBIAN"
 mkdir -p "$tmpdir/lib" "$tmpdir/boot"
+mkdir -p "$fwdir/lib/firmware/$version/"
 mkdir -p "$kernel_headers_dir/lib/modules/$version/"
 
 # Build and install the kernel
