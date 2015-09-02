@@ -33,29 +33,28 @@ MKSPEC     := $(srctree)/scripts/package/mkspec
 
 quiet_cmd_src_tar = TAR     $(2).tar.gz
       cmd_src_tar = \
-set -e; \
 if test "$(objtree)" != "$(srctree)"; then \
-	echo >&2; \
-	echo >&2 "  ERROR:"; \
-	echo >&2 "  Building source tarball is not possible outside the"; \
-	echo >&2 "  kernel source tree. Don't set KBUILD_OUTPUT, or use the"; \
-	echo >&2 "  binrpm-pkg or bindeb-pkg target instead."; \
-	echo >&2; \
+	echo "Building source tarball is not possible outside the"; \
+	echo "kernel source tree. Don't set KBUILD_OUTPUT, or use the"; \
+	echo "binrpm-pkg or bindeb-pkg target instead."; \
 	false; \
 fi ; \
 $(srctree)/scripts/setlocalversion --save-scmversion; \
+ln -sf $(srctree) $(2); \
 tar -cz $(RCS_TAR_IGNORE) -f $(2).tar.gz \
-	--transform 's:^:$(2)/:S' $(TAR_CONTENT) $(3); \
-rm -f $(objtree)/.scmversion
+	$(addprefix $(2)/,$(TAR_CONTENT) $(3)); \
+rm -f $(2) $(objtree)/.scmversion
 
 # rpm-pkg
 # ---------------------------------------------------------------------------
-rpm-pkg: FORCE
+rpm-pkg rpm: FORCE
 	$(MAKE) clean
 	$(CONFIG_SHELL) $(MKSPEC) >$(objtree)/kernel.spec
 	$(call cmd,src_tar,$(KERNELPATH),kernel.spec)
-	+rpmbuild $(RPMOPTS) --target $(UTS_MACHINE) -ta $(KERNELPATH).tar.gz \
-	--define='_smp_mflags %{nil}'
+	$(CONFIG_SHELL) $(srctree)/scripts/mkversion > $(objtree)/.tmp_version
+	mv -f $(objtree)/.tmp_version $(objtree)/.version
+	rpmbuild --target $(UTS_MACHINE) -ta $(KERNELPATH).tar.gz
+	rm $(KERNELPATH).tar.gz kernel.spec
 
 # binrpm-pkg
 # ---------------------------------------------------------------------------
