@@ -68,6 +68,11 @@ modules.builtin
 /debian/
 
 #
+# Snap directory (make snap-pkg)
+#
+/snap/
+
+#
 # tar directory (make tar*-pkg)
 #
 /tar-install/
