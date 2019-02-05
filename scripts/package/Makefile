@@ -90,12 +90,16 @@ quiet_cmd_builddeb = BUILDDEB
 deb-pkg: FORCE
 	$(MAKE) clean
 	$(call cmd,src_tar,$(KDEB_SOURCENAME))
-	$(MAKE) KBUILD_SRC=
-	+$(call cmd,builddeb)
+	origversion=$$(dpkg-parsechangelog -SVersion |sed 's/-[^-]*$$//');\
+		mv $(KDEB_SOURCENAME).tar.gz ../$(KDEB_SOURCENAME)_$${origversion}.orig.tar.gz
+	+dpkg-buildpackage -r$(KBUILD_PKG_ROOTCMD) -a$$(cat debian/arch) $(DPKG_FLAGS) -i.git -us -uc
 
 bindeb-pkg: FORCE
-	$(MAKE) KBUILD_SRC=
-	+$(call cmd,builddeb)
+	$(CONFIG_SHELL) $(srctree)/scripts/package/mkdebian
+	+dpkg-buildpackage -r$(KBUILD_PKG_ROOTCMD) -a$$(cat debian/arch) $(DPKG_FLAGS) -b -nc -uc
+
+intdeb-pkg: FORCE
+	+$(CONFIG_SHELL) $(srctree)/scripts/package/builddeb
 
 clean-dirs += $(objtree)/debian/
 
