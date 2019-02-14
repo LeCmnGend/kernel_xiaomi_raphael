@@ -58,7 +58,7 @@ rpm-pkg rpm: FORCE
 # binrpm-pkg
 # ---------------------------------------------------------------------------
 binrpm-pkg: FORCE
-	$(MAKE) KBUILD_SRC=
+	$(MAKE) -f $(srctree)/Makefile
 	$(CONFIG_SHELL) $(MKSPEC) prebuilt > $(objtree)/binkernel.spec
 	$(CONFIG_SHELL) $(srctree)/scripts/mkversion > $(objtree)/.tmp_version
 	mv -f $(objtree)/.tmp_version $(objtree)/.version
@@ -103,7 +103,7 @@ clean-dirs += $(objtree)/debian/
 # tarball targets
 # ---------------------------------------------------------------------------
 tar%pkg: FORCE
-	$(MAKE) KBUILD_SRC=
+	$(MAKE) -f $(srctree)/Makefile
 	$(CONFIG_SHELL) $(srctree)/scripts/package/buildtar $@
 
 clean-dirs += $(objtree)/tar-install/
