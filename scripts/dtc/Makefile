@@ -9,7 +9,6 @@ dtc-objs	:= dtc.o flattree.o fstree.o data.o livetree.o treesource.o \
 dtc-objs	+= dtc-lexer.lex.o dtc-parser.tab.o
 
 # Source files need to get at the userspace version of libfdt_env.h to compile
-
 HOSTCFLAGS_DTC := -I$(src) -I$(src)/libfdt
 
 HOSTCFLAGS_checks.o := $(HOSTCFLAGS_DTC)
