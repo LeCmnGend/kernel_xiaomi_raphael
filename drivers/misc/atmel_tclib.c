@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-only
 #include <linux/atmel_tc.h>
 #include <linux/clk.h>
 #include <linux/err.h>

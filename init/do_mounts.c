@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0-only
 /*
  * Many of the syscalls used in this file expect some of the arguments
  * to be __user pointers not __kernel pointers.  To limit the sparse
