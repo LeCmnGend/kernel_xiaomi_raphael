@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0-only
 ccflags-y += -Idrivers/net/ethernet/chelsio/libcxgb
 
 obj-$(CONFIG_SCSI_CXGB3_ISCSI)	+= libcxgbi.o cxgb3i/

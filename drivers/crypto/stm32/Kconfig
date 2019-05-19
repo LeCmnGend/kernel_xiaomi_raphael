@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0-only
 config CRC_DEV_STM32
 	tristate "Support for STM32 crc accelerators"
 	depends on ARCH_STM32

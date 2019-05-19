@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0-only
 menu "i.MX SoC drivers"
 
 config IMX7_PM_DOMAINS

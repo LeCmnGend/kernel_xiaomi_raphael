@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0-only
 ccflags-y += -Ofast
 
 lzo_compress-objs := lzo1x_compress.o

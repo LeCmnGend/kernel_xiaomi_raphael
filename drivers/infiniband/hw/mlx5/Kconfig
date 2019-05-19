@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0-only
 config MLX5_INFINIBAND
 	tristate "Mellanox Connect-IB HCA support"
 	depends on NETDEVICES && ETHERNET && PCI && MLX5_CORE

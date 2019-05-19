@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0-only
 ccflags-y := -Idrivers/net/ethernet/emulex/benet
 
 obj-$(CONFIG_INFINIBAND_OCRDMA)	+= ocrdma.o

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0-only
 menuconfig MICROCHIP_KSZ
 	tristate "Microchip KSZ series switch support"
 	depends on NET_DSA

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0-only
 config MTD_PARSER_TRX
 	tristate "Parser for TRX format partitions"
 	depends on MTD && (BCM47XX || ARCH_BCM_5301X || COMPILE_TEST)

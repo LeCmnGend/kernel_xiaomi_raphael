@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0-only
 subdir-ccflags-$(CONFIG_PPC_WERROR) := -Werror
 
 obj-y				+= common.o

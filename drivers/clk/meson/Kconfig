@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0-only
 config COMMON_CLK_AMLOGIC
 	bool
 	depends on OF

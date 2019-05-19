@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-2.0-only
+
 comment "Intel MIC Bus Driver"
 
 config INTEL_MIC_BUS

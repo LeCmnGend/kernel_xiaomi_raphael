@@ -1,2 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0-only
+
 source "drivers/nvme/host/Kconfig"
 source "drivers/nvme/target/Kconfig"

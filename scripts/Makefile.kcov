@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0-only
 ifdef CONFIG_KCOV
 
 ifeq ($(call cc-option, -fsanitize-coverage=trace-pc -Werror),)

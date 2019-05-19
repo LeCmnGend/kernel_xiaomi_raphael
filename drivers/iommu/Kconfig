@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0-only
 # IOMMU_API always gets selected by whoever wants it.
 config IOMMU_API
 	bool

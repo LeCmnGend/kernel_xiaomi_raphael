@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: GPL-2.0-only
+
 config ST_THERMAL
        tristate "Thermal sensors on STMicroelectronics STi series of SoCs"
        help

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0-only
 ccflags-y := -Idrivers/net/ethernet/chelsio/cxgb4
 
 obj-$(CONFIG_CHELSIO_LIB) += libcxgb.o

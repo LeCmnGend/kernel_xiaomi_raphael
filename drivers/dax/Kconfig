@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0-only
 menuconfig DAX
 	tristate "DAX: direct access to differentiated memory"
 	select SRCU
