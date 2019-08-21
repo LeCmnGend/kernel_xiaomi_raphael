@@ -1640,17 +1640,14 @@ distclean: mrproper
 
 # Packaging of the kernel to various formats
 # ---------------------------------------------------------------------------
-# rpm target kept for backward compatibility
-package-dir	:= scripts/package
 
 %src-pkg: FORCE
-	$(Q)$(MAKE) $(build)=$(package-dir) $@
+	$(Q)$(MAKE) -f $(srctree)/scripts/Makefile.package $@
 %pkg: include/config/kernel.release FORCE
-	$(Q)$(MAKE) $(build)=$(package-dir) $@
+	$(Q)$(MAKE) -f $(srctree)/scripts/Makefile.package $@
 rpm: rpm-pkg
 	@echo "  WARNING: \"rpm\" target will be removed after Linux 4.18"
 	@echo "           Please use \"rpm-pkg\" instead."
-
 
 # Brief documentation of the typical targets used
 # ---------------------------------------------------------------------------
@@ -1719,7 +1716,7 @@ help:
 	@echo '  or  "cd tools; make help"'
 	@echo  ''
 	@echo  'Kernel packaging:'
-	@$(MAKE) $(build)=$(package-dir) help
+	@$(MAKE) -f $(srctree)/scripts/Makefile.package help
 	@echo  ''
 	@echo  'Documentation targets:'
 	@$(MAKE) -f $(srctree)/Documentation/Makefile dochelp

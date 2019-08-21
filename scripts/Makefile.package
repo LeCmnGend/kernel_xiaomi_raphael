@@ -1,5 +1,6 @@
 # Makefile for the different targets used to generate full packages of a kernel
-# It uses the generic clean infrastructure of kbuild
+
+include $(srctree)/scripts/Kbuild.include
 
 # RPM target
 # ---------------------------------------------------------------------------
@@ -174,3 +175,5 @@ help:
 	@echo '  perf-targz-src-pkg  - Build $(perf-tar).tar.gz source tarball'
 	@echo '  perf-tarbz2-src-pkg - Build $(perf-tar).tar.bz2 source tarball'
 	@echo '  perf-tarxz-src-pkg  - Build $(perf-tar).tar.xz source tarball'
+
+.PHONY: $(PHONY)
