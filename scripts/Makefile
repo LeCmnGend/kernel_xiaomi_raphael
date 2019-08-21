@@ -50,4 +50,4 @@ subdir-$(CONFIG_DTC)         += dtc
 subdir-$(CONFIG_GDB_SCRIPTS) += gdb
 
 # Let clean descend into subdirs
-subdir-	+= basic kconfig package gcc-plugins
+subdir-	+= basic dtc gdb kconfig mod
