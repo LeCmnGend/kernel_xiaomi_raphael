@@ -29,7 +29,7 @@ extern struct module __this_module;
 
 #define NS_SEPARATOR "."
 
-#if defined(__KERNEL__) && !defined(__GENKSYMS__)
+#if !defined(__GENKSYMS__)
 #ifdef CONFIG_MODVERSIONS
 /* Mark the CRC weak since genksyms apparently decides not to
  * generate a checksums for some symbols */
