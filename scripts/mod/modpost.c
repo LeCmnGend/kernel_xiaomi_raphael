@@ -315,6 +315,20 @@ static enum export export_from_sec(struct elf_info *elf, unsigned int sec)
 		return export_unknown;
 }
 
+static const char *sym_extract_namespace(const char **symname)
+{
+	char *namespace = NULL;
+	char *ns_separator;
+
+	ns_separator = strchr(*symname, '.');
+	if (ns_separator) {
+		namespace = NOFAIL(strndup(*symname, ns_separator - *symname));
+		*symname = ns_separator + 1;
+	}
+
+	return namespace;
+}
+
 /**
  * Add an exported symbol - it may have already been added without a
  * CRC, in this case just update the CRC
