@@ -99,6 +99,10 @@ SECTIONS
 #endif
 		/* careful! __ftr_alt_* sections need to be close to .text */
 		*(.text.hot .text .text.fixup .text.unlikely .fixup __ftr_alt_* .ref.text);
+#ifdef CONFIG_PPC64
+		*(.tramp.ftrace.text);
+#endif
+		NOINSTR_TEXT
 		SCHED_TEXT
 		CPUIDLE_TEXT
 		LOCK_TEXT

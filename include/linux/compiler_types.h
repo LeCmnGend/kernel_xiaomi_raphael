@@ -143,6 +143,10 @@ struct ftrace_likely_data {
 #define __must_check
 #endif
 
+/* Section for code which can't be instrumented at all */
+#define noinstr								\
+	noinline notrace __attribute((__section__(".noinstr.text")))
+
 #ifndef CONFIG_ENABLE_MUST_CHECK
 #undef __must_check
 #define __must_check
