@@ -363,8 +363,14 @@ HOST_LFS_CFLAGS := $(shell getconf LFS_CFLAGS 2>/dev/null)
 HOST_LFS_LDFLAGS := $(shell getconf LFS_LDFLAGS 2>/dev/null)
 HOST_LFS_LIBS := $(shell getconf LFS_LIBS 2>/dev/null)
 
-HOSTCC       = clang
-HOSTCXX      = clang++
+ifneq ($(LLVM),)
+HOSTCC	= clang
+HOSTCXX	= clang++
+else
+HOSTCC	= gcc
+HOSTCXX	= g++
+endif
+
 HOSTCFLAGS   := -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 \
 		-fomit-frame-pointer -std=gnu89 -pipe $(HOST_LFS_CFLAGS)
 HOSTCXXFLAGS := -O2 $(HOST_LFS_CFLAGS)
@@ -372,12 +378,12 @@ HOSTLDFLAGS  := $(HOST_LFS_LDFLAGS)
 HOST_LOADLIBES := $(HOST_LFS_LIBS)
 
 # Make variables (CC, etc...)
-LD		= ld.lld
+ifneq ($(LLVM),)
 CC		= clang
 CXX		= clang++
+LD		= ld.lld
 LDGOLD		= ld.gold
 LDLLD		= ld.lld
-CPP		= $(CC) -E
 AR		= llvm-ar
 NM		= llvm-nm
 STRIP		= llvm-strip
@@ -385,6 +391,19 @@ OBJCOPY		= llvm-objcopy
 OBJDUMP		= llvm-objdump
 OBJSIZE		= llvm-size
 READELF		= llvm-readelf
+else
+CC		= $(CROSS_COMPILE)gcc
+CXX		= $(CROSS_COMPILE)g++
+LD		= $(CROSS_COMPILE)ld
+AR		= $(CROSS_COMPILE)ar
+NM		= $(CROSS_COMPILE)nm
+OBJCOPY		= $(CROSS_COMPILE)objcopy
+OBJDUMP		= $(CROSS_COMPILE)objdump
+READELF		= $(CROSS_COMPILE)readelf
+OBJSIZE		= $(CROSS_COMPILE)size
+STRIP		= $(CROSS_COMPILE)strip
+endif
+CPP		= $(CC) -E
 LEX		= flex
 YACC		= bison
 AWK		= awk
