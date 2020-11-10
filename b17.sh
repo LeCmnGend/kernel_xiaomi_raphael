@@ -38,7 +38,7 @@ export AK3_URL="https://github.com/lecmngend/AnyKernel3"
 export AK3_BRANCH="raphael"
 export AK3_DIR="$HOME/tc/AK3/$AK3_BRANCH"
 ##############################################################
-
+clear
 # Check if toolchain is exist
 if ! [ -d "$TC_DIR" ]; then
 		echo "Clang Compiler not found! Cloning to $TC_DIR..."
