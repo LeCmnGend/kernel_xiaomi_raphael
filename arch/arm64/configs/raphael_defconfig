@@ -885,3 +885,4 @@ CONFIG_CAN_CALC_BITTIMING=y
 # end of CAN USB interfaces
 # CONFIG_CAN_DEBUG_DEVICES is not set
 # end of CAN Device Drivers
+CONFIG_ZSTD_COMMON=y
