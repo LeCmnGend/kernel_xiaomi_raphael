@@ -552,6 +552,26 @@ static int kvm_vcpu_first_run_init(struct kvm_vcpu *vcpu)
 		ret = kvm_vgic_map_resources(kvm);
 		if (ret)
 			return ret;
+
+	kvm_arm_vcpu_init_debug(vcpu);
+
+	if (likely(irqchip_in_kernel(kvm))) {
+		/*
+		 * Map the VGIC hardware resources before running a vcpu the
+		 * first time on this VM.
+		 */
+		if (unlikely(!vgic_ready(kvm))) {
+			ret = kvm_vgic_map_resources(kvm);
+			if (ret)
+				return ret;
+		}
+	} else {
+		/*
+		 * Tell the rest of the code that there are userspace irqchip
+		 * VMs in the wild.
+		 */
+		static_branch_inc(&userspace_irqchip_in_use);
+>>>>>>> 25249580696... KVM: arm64: Initialize VCPU mdcr_el2 before loading it
 	}
 
 	ret = kvm_timer_enable(vcpu);
