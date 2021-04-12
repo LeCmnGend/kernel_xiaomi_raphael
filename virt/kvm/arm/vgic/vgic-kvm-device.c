@@ -92,7 +92,12 @@ int kvm_vgic_addr(struct kvm *kvm, unsigned long type, u64 *addr, bool write)
 			r = vgic_v3_set_redist_base(kvm, *addr);
 			goto out;
 		}
-		addr_ptr = &vgic->vgic_redist_base;
+		rdreg = list_first_entry_or_null(&vgic->rd_regions,
+						 struct vgic_redist_region, list);
+		if (!rdreg)
+			addr_ptr = &undef_value;
+		else
+			addr_ptr = &rdreg->base;
 		break;
 	default:
 		r = -ENODEV;
