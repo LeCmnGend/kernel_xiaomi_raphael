@@ -1451,4 +1451,8 @@ config TOUCHSCREEN_NT36XX
 
 source "drivers/input/touchscreen/nt36xxx/Kconfig"
 
+# Xiaomi
+source "drivers/input/touchscreen/nt36672c/Kconfig"
+source "drivers/input/touchscreen/xiaomi/Kconfig"
+
 endif
