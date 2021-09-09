@@ -65,8 +65,23 @@ struct fscrypt_operations {
 	const union fscrypt_context *(*get_dummy_context)(
 		struct super_block *sb);
 	bool (*empty_dir)(struct inode *inode);
-	unsigned int max_namelen;
+
 	bool (*is_encrypted)(struct inode *);
+
+	/*
+	 * Check whether the filesystem's inode numbers and UUID are stable,
+	 * meaning that they will never be changed even by offline operations
+	 * such as filesystem shrinking and therefore can be used in the
+	 * encryption without the possibility of files becoming unreadable.
+	 *
+	 * Filesystems only need to implement this function if they want to
+	 * support the FSCRYPT_POLICY_FLAG_IV_INO_LBLK_{32,64} flags.  These
+	 * flags are designed to work around the limitations of UFS and eMMC
+	 * inline crypto hardware, and they shouldn't be used in scenarios where
+	 * such hardware isn't being used.
+	 *
+	 * Leaving this NULL is equivalent to always returning false.
+	 */
 	bool (*has_stable_inodes)(struct super_block *sb);
 	void (*get_ino_and_lblk_bits)(struct super_block *sb,
 				      int *ino_bits_ret, int *lblk_bits_ret);
