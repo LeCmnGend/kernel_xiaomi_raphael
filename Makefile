@@ -911,7 +911,13 @@ endif
 ifdef CONFIG_LTO_CLANG
 ifdef CONFIG_THINLTO
 lto-clang-flags	:= -flto=thin
+# Set default thinlto-cache-dir
+ifeq ($(THINLTO_CACHE_DIR),)
 LDFLAGS		+= --thinlto-cache-dir=.thinlto-cache
+else
+LDFLAGS		+= --thinlto-cache-dir=$(THINLTO_CACHE_DIR)
+endif
+# End: Set default thinlto-cache-dir
 else
 lto-clang-flags	:= -flto
 endif
