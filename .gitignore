@@ -133,3 +133,4 @@ Android.bp
 
 # Object directory
 out/
+t.sh
