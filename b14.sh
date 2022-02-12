@@ -10,7 +10,7 @@ TC_BRANCH="clang-14"
 TC_DIR="$HOME/tc/proton/$TC_BRANCH"
 TC_URL="https://gitlab.com/lecmngend/proton-clang"
 TC_GIT_BRANCH=$TC_BRANCH
-export THINLTO_CACHE="/mnt/e/.ccache/ltocache/"
+export THINLTO_CACHE_DIR="/mnt/e/.ccache/ltocache/"
 
 AK3_DIR="$HOME/tc/AK3/raphael"
 AK3_URL="https://github.com/lecmngend/AnyKernel3"
