@@ -16,6 +16,8 @@
 #include <linux/refcount.h>
 #include <linux/workqueue.h>
 
+#define SELINUX_LABEL_LENGTH 80
+
 #define SECSID_NULL			0x00000000 /* unspecified SID */
 #define SECSID_WILD			0xffffffff /* wildcard SID */
 #define SECCLASS_NULL			0x0000 /* no class */
