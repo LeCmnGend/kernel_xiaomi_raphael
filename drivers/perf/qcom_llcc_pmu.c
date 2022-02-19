@@ -22,11 +22,17 @@
 #include <linux/spinlock.h>
 #include <linux/ktime.h>
 
+enum llcc_pmu_version {
+	LLCC_PMU_VER1 = 1,
+	LLCC_PMU_VER2,
+};
+
 struct llcc_pmu {
 	struct pmu pmu;
 	struct hlist_node node;
 	void __iomem *lagg_base;
 	struct perf_event event;
+	enum llcc_pmu_version	ver;
 };
 
 #define MON_CFG(m) ((m)->lagg_base + 0x200)
@@ -36,6 +42,7 @@ struct llcc_pmu {
 #define LLCC_RD_EV 0x1000
 #define ENABLE 0x01
 #define CLEAR 0x10
+#define CLEAR_POS 16
 #define DISABLE 0x00
 #define SCALING_FACTOR 0x3
 #define NUM_COUNTERS NR_CPUS
@@ -46,6 +53,91 @@ static unsigned int users;
 static raw_spinlock_t counter_lock;
 static raw_spinlock_t users_lock;
 static ktime_t last_read;
+static DEFINE_PER_CPU(unsigned int, users_alive);
+
+static void mon_disable(struct llcc_pmu *llccpmu, int cpu)
+{
+	u32 reg;
+
+	if (!llccpmu->ver) {
+		pr_err("LLCCPMU version not correct\n");
+		return;
+	}
+
+	switch (llccpmu->ver) {
+	case LLCC_PMU_VER1:
+		writel_relaxed(DISABLE, MON_CFG(llccpmu));
+		break;
+	case LLCC_PMU_VER2:
+		reg = readl_relaxed(MON_CFG(llccpmu));
+		reg &= ~(ENABLE << cpu);
+		writel_relaxed(reg, MON_CFG(llccpmu));
+		break;
+	}
+}
+
+static void mon_clear(struct llcc_pmu *llccpmu, int cpu)
+{
+	int clear_bit = CLEAR_POS + cpu;
+	u32 reg;
+
+	if (!llccpmu->ver) {
+		pr_err("LLCCPMU version not correct\n");
+		return;
+	}
+
+	switch (llccpmu->ver) {
+	case LLCC_PMU_VER1:
+		writel_relaxed(CLEAR, MON_CFG(llccpmu));
+		break;
+	case LLCC_PMU_VER2:
+		reg = readl_relaxed(MON_CFG(llccpmu));
+		reg |= (ENABLE << clear_bit);
+		writel_relaxed(reg, MON_CFG(llccpmu));
+		reg &= ~(ENABLE << clear_bit);
+		writel_relaxed(reg, MON_CFG(llccpmu));
+		break;
+	}
+}
+
+static void mon_enable(struct llcc_pmu *llccpmu, int cpu)
+{
+	u32 reg;
+
+	if (!llccpmu->ver) {
+		pr_err("LLCCPMU version not correct\n");
+		return;
+	}
+
+	switch (llccpmu->ver) {
+	case LLCC_PMU_VER1:
+		writel_relaxed(ENABLE, MON_CFG(llccpmu));
+		break;
+	case LLCC_PMU_VER2:
+		reg = readl_relaxed(MON_CFG(llccpmu));
+		reg |= (ENABLE << cpu);
+		writel_relaxed(reg, MON_CFG(llccpmu));
+		break;
+	}
+}
+
+static unsigned long read_cnt(struct llcc_pmu *llccpmu, int cpu)
+{
+	unsigned long value;
+
+	switch (llccpmu->ver) {
+	case LLCC_PMU_VER1:
+		value = readl_relaxed(MON_CNT(llccpmu, cpu));
+		break;
+	case LLCC_PMU_VER2:
+		value = readl_relaxed(MON_CNT(llccpmu, cpu));
+		break;
+	default:
+		pr_err("LLCCPMU version not correct\n");
+		return -EINVAL;
+	}
+	return value;
+}
 
 static int qcom_llcc_event_init(struct perf_event *event)
 {
