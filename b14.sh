@@ -16,32 +16,6 @@ AK3_DIR="$HOME/tc/AK3/raphael"
 AK3_URL="https://github.com/lecmngend/AnyKernel3"
 AK3_BRANCH="raphael"
 
-DEFCONFIG="vendor/raphael-perf_defconfig"
-
-SECONDS=0 # builtin bash timer
-
-ZIPNAME="FuAnDo-raphael-OSS-$(date '+%Y%m%d-%H%M').zip"
-
-export PROC="-j11"
-
-export PATH="$TC_DIR/bin:$PATH" 
-
-# Setup ccache environment
-export USE_CCACHE=1
-export CCACHE_EXEC=/usr/local/bin/ccache
-CROSS_COMPILE+="ccache clang"
-CCACHE=true
-# Disable google hidden path (fuk google)
-export PATH="$TC_DIR/bin:$PATH"
-export KBUILD_COMPILER_STRING="$($TC_DIR/bin/clang --version | head -n 1 | perl -pe 's/\((?:http|git).*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//' -e 's/^.*clang/clang/')"
-
-# Modules environtment
-STRIP="$TC_DIR/bin/$(echo "$(find "$TC_DIR/bin" -type f -name "aarch64-*-gcc")" | awk -F '/' '{print $NF}' |\
-			sed -e 's/gcc/strip/')"
-
-# Kernel Details
-KERNEL_VER="1.0.02"
-
 # Check if toolchain is exist
 if ! [ -d "$TC_DIR" ]; then
 		echo "Proton clang not found! Cloning to $TC_DIR..."
@@ -51,8 +25,30 @@ if ! [ -d "$TC_DIR" ]; then
 		fi
 fi
 
-clear
+# Setup environment
+DEFCONFIG="vendor/raphael-perf_defconfig"
+SECONDS=0 # builtin bash timer
+ZIPNAME="FuAnDo-raphael-OSS-$(date '+%Y%m%d-%H%M').zip"
+export PROC="-j$(nproc --all)"
 
+# Setup ccache environment
+export USE_CCACHE=1
+export CCACHE_EXEC=/usr/local/bin/ccache
+CROSS_COMPILE+="ccache clang"
+
+
+# Toolchain environtment
+export PATH="$TC_DIR/bin:$PATH"
+export KBUILD_COMPILER_STRING="$($TC_DIR/bin/clang --version | head -n 1 | perl -pe 's/\((?:http|git).*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//' -e 's/^.*clang/clang/')"
+
+# Modules environtment
+STRIP="$TC_DIR/bin/$(echo "$(find "$TC_DIR/bin" -type f -name "aarch64-*-gcc")" | awk -F '/' '{print $NF}' |\
+			sed -e 's/gcc/strip/')"
+
+# Kernel Details
+KERNEL_VER="1.2.24"
+
+clear
 
 function clean_all {
 		cd $KERNEL_DIR
