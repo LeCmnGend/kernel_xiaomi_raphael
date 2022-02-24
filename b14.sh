@@ -40,7 +40,7 @@ STRIP="$TC_DIR/bin/$(echo "$(find "$TC_DIR/bin" -type f -name "aarch64-*-gcc")" 
 			sed -e 's/gcc/strip/')"
 
 # Kernel Details
-VER="1.0.02"
+KERNEL_VER="1.0.02"
 
 # Check if toolchain is exist
 if ! [ -d "$TC_DIR" ]; then
