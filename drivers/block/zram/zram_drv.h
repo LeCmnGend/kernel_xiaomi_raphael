@@ -52,6 +52,7 @@ enum zram_pageflags {
 	ZRAM_UNDER_WB,	/* page is under writeback */
 	ZRAM_HUGE,	/* Incompressible page */
 	ZRAM_IDLE,	/* not accessed page since last idle marking */
+	ZRAM_DEDUPED, /* Deduplicated with existing entry */
 
 	__NR_ZRAM_PAGEFLAGS,
 };
@@ -61,7 +62,7 @@ enum zram_pageflags {
 struct zram_entry {
 	struct rb_node rb_node;
 	u32 len;
-	u32 checksum;
+	u64 checksum;
 	unsigned long refcount;
 	unsigned long handle;
 };
