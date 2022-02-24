@@ -449,8 +449,8 @@ static ssize_t backing_dev_store(struct device *dev,
 	struct file *backing_dev = NULL;
 	struct inode *inode;
 	struct address_space *mapping;
-	unsigned int bitmap_sz;
-	unsigned long nr_pages, *bitmap = NULL;
+	unsigned int bitmap_sz, old_block_size = 0;
+	unsigned long nr_pages, nr_size, *bitmap = NULL;
 	struct block_device *bdev = NULL;
 	int err;
 	struct zram *zram = dev_to_zram(dev);
@@ -496,13 +496,25 @@ static ssize_t backing_dev_store(struct device *dev,
 		goto out;
 	}
 
-	nr_pages = i_size_read(inode) >> PAGE_SHIFT;
+	nr_size = i_size_read(inode);
+	nr_pages = nr_size >> PAGE_SHIFT;
 	bitmap_sz = BITS_TO_LONGS(nr_pages) * sizeof(long);
 	bitmap = kvzalloc(bitmap_sz, GFP_KERNEL);
 	if (!bitmap) {
 		err = -ENOMEM;
 		goto out;
 	}
+
+	old_block_size = block_size(bdev);
+	err = set_blocksize(bdev, PAGE_SIZE);
+	if (err)
+		goto out;
+
+	// Trim the device
+	pr_info("discarding backing device\n");
+	err = blkdev_issue_discard(bdev, 0, nr_size >> 9, GFP_KERNEL, 0);
+	if (err)
+		pr_warn("failed to discard device: %d\n", err);
 
 	reset_bdev(zram);
 
@@ -691,6 +703,7 @@ static ssize_t writeback_store(struct device *dev,
 
 		if (zram_test_flag(zram, index, ZRAM_WB) ||
 				zram_test_flag(zram, index, ZRAM_SAME) ||
+				zram_test_flag(zram, index, ZRAM_DEDUPED) ||
 				zram_test_flag(zram, index, ZRAM_UNDER_WB))
 			goto next;
 
@@ -708,6 +721,7 @@ static ssize_t writeback_store(struct device *dev,
 		/* Need for hugepage writeback racing */
 		zram_set_flag(zram, index, ZRAM_IDLE);
 		zram_slot_unlock(zram, index);
+
 		if (zram_bvec_read(zram, &bvec, index, 0, NULL)) {
 			zram_slot_lock(zram, index);
 			zram_clear_flag(zram, index, ZRAM_UNDER_WB);
@@ -907,7 +921,8 @@ static ssize_t read_block_state(struct file *file, char __user *buf,
 			zram_test_flag(zram, index, ZRAM_SAME) ? 's' : '.',
 			zram_test_flag(zram, index, ZRAM_WB) ? 'w' : '.',
 			zram_test_flag(zram, index, ZRAM_HUGE) ? 'h' : '.',
-			zram_test_flag(zram, index, ZRAM_IDLE) ? 'i' : '.');
+			zram_test_flag(zram, index, ZRAM_IDLE) ? 'i' : '.',
+			zram_test_flag(zram, index, ZRAM_DEDUPED) ? 'd' : '.');
 
 		if (count < copied) {
 			zram_slot_unlock(zram, index);
@@ -1113,7 +1128,7 @@ static ssize_t mm_stat_show(struct device *dev,
 	max_used = atomic_long_read(&zram->stats.max_used_pages);
 
 	ret = scnprintf(buf, PAGE_SIZE,
-			"%8llu %8llu %8llu %8lu %8ld %8llu %8lu %8llu %8llu %8llu %8llu\n",
+			"%8llu %8llu %8llu %8lu %8ld %8llu %8lu %8llu %8llu %8llu %8llu %8llu\n",
 			orig_size << PAGE_SHIFT,
 			(u64)atomic64_read(&zram->stats.compr_data_size),
 			mem_used << PAGE_SHIFT,
@@ -1286,6 +1301,9 @@ static void zram_free_page(struct zram *zram, size_t index)
 		atomic64_dec(&zram->stats.huge_pages);
 	}
 
+	if (zram_test_flag(zram, index, ZRAM_DEDUPED))
+		zram_clear_flag(zram, index, ZRAM_DEDUPED);
+
 	if (zram_test_flag(zram, index, ZRAM_WB)) {
 		zram_clear_flag(zram, index, ZRAM_WB);
 		free_block_bdev(zram, zram_get_element(zram, index));
@@ -1425,7 +1443,7 @@ static int __zram_bvec_write(struct zram *zram, struct bio_vec *bvec,
 	void *src, *dst, *mem;
 	struct zcomp_strm *zstrm;
 	struct page *page = bvec->bv_page;
-	u32 checksum;
+	u64 checksum;
 	unsigned long element = 0;
 	enum zram_pageflags flags = 0;
 
@@ -1528,10 +1546,15 @@ out:
 		atomic64_inc(&zram->stats.huge_pages_since);
 	}
 
-	if (flags) {
+	switch (flags) {
+	case ZRAM_SAME:
 		zram_set_flag(zram, index, flags);
 		zram_set_element(zram, index, element);
-	}  else {
+		break;
+	case ZRAM_DEDUPED:
+		zram_set_flag(zram, index, flags);
+		// Fallthrough
+	default:
 		zram_set_entry(zram, index, entry);
 		zram_set_obj_size(zram, index, comp_len);
 	}
@@ -1818,6 +1841,7 @@ static void zram_reset_device(struct zram *zram)
 	part_stat_set_all(&zram->disk->part0, 0);
 
 	up_write(&zram->init_lock);
+
 	/* I/O operation under all of CPU are done so let's free */
 	zram_meta_free(zram, disksize);
 	memset(&zram->stats, 0, sizeof(zram->stats));
@@ -2024,6 +2048,9 @@ static int zram_add(void)
 	init_rwsem(&zram->init_lock);
 #ifdef CONFIG_ZRAM_WRITEBACK
 	spin_lock_init(&zram->wb_limit_lock);
+#endif    
+#ifdef CONFIG_ZRAM_DEDUP
+	zram->use_dedup = true;
 #endif
 	queue = blk_alloc_queue(GFP_KERNEL);
 	if (!queue) {
