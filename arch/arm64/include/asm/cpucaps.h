@@ -50,4 +50,6 @@
 
 #define ARM64_NCAPS				31
 
+#define ARM64_SPECTRE_BHB			32
+
 #endif /* __ASM_CPUCAPS_H */
