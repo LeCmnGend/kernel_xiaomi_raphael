@@ -17,13 +17,13 @@
 """Tool for packing multiple DTB/DTBO files into a single image"""
 
 import argparse
-import os
 import fnmatch
+import os
+import struct
+import zlib
 from array import array
 from collections import namedtuple
-import struct
 from sys import stdout
-import zlib
 
 class CompressionFormat:
     """Enum representing DT compression format for a DT entry.
@@ -543,7 +543,7 @@ class Dtbo:
         offset = self.dt_entries[idx].dt_offset
         self.__file.seek(offset, 0)
         fout.seek(0)
-        compression_format = self.dt_entries[idx].compression_info(self.version)
+        compression_format = self.dt_entries[idx].compression_info()
         if decompress and compression_format:
             if (compression_format == CompressionFormat.ZLIB_COMPRESSION or
                 compression_format == CompressionFormat.GZIP_COMPRESSION):
