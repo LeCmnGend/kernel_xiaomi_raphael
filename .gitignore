@@ -141,7 +141,8 @@ Android.bp
 
 # Object directory
 out/
-t.sh
 
 # Kernel zip file
 *.zip
+t.sh
+prebuilt
