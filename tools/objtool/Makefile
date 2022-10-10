@@ -9,6 +9,7 @@ endif
 # always use the host compiler
 HOSTAR	?= llvm-ar
 HOSTCC	?= clang
+HOSTXX	?= clang++
 HOSTLD	?= ld.lld
 AR	 = $(HOSTAR)
 CC	 = $(HOSTCC)

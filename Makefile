@@ -375,6 +375,7 @@ HOST_LOADLIBES := $(HOST_LFS_LIBS)
 AS		= llvm-as
 LD		= ld.lld
 CC		= clang
+CXX		= clang++
 LDGOLD		= ld.gold
 LDLLD		= ld.lld
 CPP		= $(CC) -E
@@ -529,10 +530,6 @@ CLANG_FLAGS	+= $(call cc-option, -Wno-bool-operation)
 CLANG_FLAGS	+= $(call cc-option, -Wno-unsequenced)
 KBUILD_CFLAGS	+= $(CLANG_FLAGS)
 KBUILD_AFLAGS	+= $(CLANG_FLAGS)
-ifeq ($(ld-name),lld)
-KBUILD_CFLAGS += -fuse-ld=lld
-endif
-KBUILD_CPPFLAGS += -Qunused-arguments
 export CLANG_FLAGS
 ifeq ($(ld-name),lld)
 KBUILD_CFLAGS += -fuse-ld=lld
