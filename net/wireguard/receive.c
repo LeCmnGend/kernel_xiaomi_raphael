@@ -11,6 +11,7 @@
 #include "cookie.h"
 #include "socket.h"
 
+#include <linux/simd.h>
 #include <linux/ip.h>
 #include <linux/ipv6.h>
 #include <linux/udp.h>
@@ -116,8 +117,8 @@ static void wg_receive_handshake_packet(struct wg_device *wg,
 		return;
 	}
 
-	under_load = atomic_read(&wg->handshake_queue_len) >=
-			MAX_QUEUED_INCOMING_HANDSHAKES / 8;
+	under_load = skb_queue_len(&wg->incoming_handshakes) >=
+		     MAX_QUEUED_INCOMING_HANDSHAKES / 8;
 	if (under_load) {
 		last_under_load = ktime_get_coarse_boottime_ns();
 	} else if (last_under_load) {
@@ -212,14 +213,13 @@ static void wg_receive_handshake_packet(struct wg_device *wg,
 
 void wg_packet_handshake_receive_worker(struct work_struct *work)
 {
-	struct crypt_queue *queue = container_of(work, struct multicore_worker, work)->ptr;
-	struct wg_device *wg = container_of(queue, struct wg_device, handshake_queue);
+	struct wg_device *wg = container_of(work, struct multicore_worker,
+					    work)->ptr;
 	struct sk_buff *skb;
 
-	while ((skb = ptr_ring_consume_bh(&queue->ring)) != NULL) {
+	while ((skb = skb_dequeue(&wg->incoming_handshakes)) != NULL) {
 		wg_receive_handshake_packet(wg, skb);
 		dev_kfree_skb(skb);
-		atomic_dec(&wg->handshake_queue_len);
 		cond_resched();
 	}
 }
@@ -246,7 +246,8 @@ static void keep_key_fresh(struct wg_peer *peer)
 	}
 }
 
-static bool decrypt_packet(struct sk_buff *skb, struct noise_keypair *keypair)
+static bool decrypt_packet(struct sk_buff *skb, struct noise_keypair *keypair,
+			   simd_context_t *simd_context)
 {
 	struct scatterlist sg[MAX_SKB_FRAGS + 8];
 	struct sk_buff *trailer;
@@ -283,8 +284,9 @@ static bool decrypt_packet(struct sk_buff *skb, struct noise_keypair *keypair)
 		return false;
 
 	if (!chacha20poly1305_decrypt_sg_inplace(sg, skb->len, NULL, 0,
-					         PACKET_CB(skb)->nonce,
-						 keypair->receiving.key))
+						 PACKET_CB(skb)->nonce,
+						 keypair->receiving.key,
+						 simd_context))
 		return false;
 
 	/* Another ugly situation of pushing and pulling the header so as to
@@ -387,7 +389,9 @@ static void wg_packet_consume_data_done(struct wg_peer *peer,
 	 * again in software.
 	 */
 	skb->ip_summed = CHECKSUM_UNNECESSARY;
+#ifndef COMPAT_CANNOT_USE_CSUM_LEVEL
 	skb->csum_level = ~0; /* All levels */
+#endif
 	skb->protocol = ip_tunnel_parse_protocol(skb);
 	if (skb->protocol == htons(ETH_P_IP)) {
 		len = ntohs(ip_hdr(skb)->tot_len);
@@ -501,16 +505,20 @@ void wg_packet_decrypt_worker(struct work_struct *work)
 {
 	struct crypt_queue *queue = container_of(work, struct multicore_worker,
 						 work)->ptr;
+	simd_context_t simd_context;
 	struct sk_buff *skb;
 
+	simd_get(&simd_context);
 	while ((skb = ptr_ring_consume_bh(&queue->ring)) != NULL) {
 		enum packet_state state =
-			likely(decrypt_packet(skb, PACKET_CB(skb)->keypair)) ?
+			likely(decrypt_packet(skb, PACKET_CB(skb)->keypair,
+					      &simd_context)) ?
 				PACKET_STATE_CRYPTED : PACKET_STATE_DEAD;
 		wg_queue_enqueue_per_peer_rx(skb, state);
-		if (need_resched())
-			cond_resched();
+		simd_relax(&simd_context);
 	}
+
+	simd_put(&simd_context);
 }
 
 static void wg_packet_consume_data(struct wg_device *wg, struct sk_buff *skb)
@@ -554,28 +562,22 @@ void wg_packet_receive(struct wg_device *wg, struct sk_buff *skb)
 	case cpu_to_le32(MESSAGE_HANDSHAKE_INITIATION):
 	case cpu_to_le32(MESSAGE_HANDSHAKE_RESPONSE):
 	case cpu_to_le32(MESSAGE_HANDSHAKE_COOKIE): {
-		int cpu, ret = -EBUSY;
+		int cpu;
 
-		if (unlikely(!rng_is_initialized()))
-			goto drop;
-		if (atomic_read(&wg->handshake_queue_len) > MAX_QUEUED_INCOMING_HANDSHAKES / 2) {
-			if (spin_trylock_bh(&wg->handshake_queue.ring.producer_lock)) {
-				ret = __ptr_ring_produce(&wg->handshake_queue.ring, skb);
-				spin_unlock_bh(&wg->handshake_queue.ring.producer_lock);
-			}
-		} else
-			ret = ptr_ring_produce_bh(&wg->handshake_queue.ring, skb);
-		if (ret) {
-	drop:
+		if (skb_queue_len(&wg->incoming_handshakes) >
+			    MAX_QUEUED_INCOMING_HANDSHAKES ||
+		    unlikely(!rng_is_initialized())) {
 			net_dbg_skb_ratelimited("%s: Dropping handshake packet from %pISpfsc\n",
 						wg->dev->name, skb);
 			goto err;
 		}
-		atomic_inc(&wg->handshake_queue_len);
-		cpu = wg_cpumask_next_online(&wg->handshake_queue.last_cpu);
-		/* Queues up a call to packet_process_queued_handshake_packets(skb): */
+		skb_queue_tail(&wg->incoming_handshakes, skb);
+		/* Queues up a call to packet_process_queued_handshake_
+		 * packets(skb):
+		 */
+		cpu = wg_cpumask_next_online(&wg->incoming_handshake_cpu);
 		queue_work_on(cpu, wg->handshake_receive_wq,
-			      &per_cpu_ptr(wg->handshake_queue.worker, cpu)->work);
+			&per_cpu_ptr(wg->incoming_handshakes_worker, cpu)->work);
 		break;
 	}
 	case cpu_to_le32(MESSAGE_DATA):
