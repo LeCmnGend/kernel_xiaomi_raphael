@@ -38,7 +38,7 @@ else
 fi
 
 # Setup environment
-DEFCONFIG="vendor/raphael-perf_defconfig"
+DEFCONFIG="raphael_defconfig"
 SECONDS=0 # builtin bash timer
 ZIPNAME="FuAnDo-raphael-$(date '+%Y%m%d-%H%M').zip"
 export PROC="-j$(nproc --all)"
