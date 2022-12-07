@@ -268,6 +268,7 @@ static void sdio_release_func(struct device *dev)
 {
 	struct sdio_func *func = dev_to_sdio_func(dev);
 
+<<<<<<< HEAD
 #ifdef CONFIG_MMC_EMBEDDED_SDIO
 	/*
 	 * If this device is embedded then we never allocated
@@ -275,6 +276,9 @@ static void sdio_release_func(struct device *dev)
 	 */
 	if (!func->card->host->embedded_sdio_data.funcs)
 #endif
+=======
+	if (!(func->card->quirks & MMC_QUIRK_NONSTD_SDIO))
+>>>>>>> b3275dde570b (mmc: core: Fix kernel panic when remove non-standard SDIO card)
 		sdio_free_func_cis(func);
 
 	kfree(func->info);
