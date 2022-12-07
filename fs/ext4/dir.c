@@ -53,19 +53,6 @@ static int is_dx_dir(struct inode *inode)
 	return 0;
 }
 
-static bool is_fake_entry(struct inode *dir, ext4_lblk_t lblk,
-			  unsigned int offset, unsigned int blocksize)
-{
-	/* Entries in the first block before this value refer to . or .. */
-	if (lblk == 0 && offset <= DOTDOT_OFFSET)
-		return true;
-	/* Check if this is likely the csum entry */
-	if (ext4_has_metadata_csum(dir->i_sb) && offset % blocksize ==
-				blocksize - sizeof(struct ext4_dir_entry_tail))
-		return true;
-	return false;
-}
-
 /*
  * Return 0 if the directory entry is OK, and 1 if there is a problem
  *
