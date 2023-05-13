@@ -742,6 +742,65 @@ u32 dsi_panel_get_fod_dim_alpha(struct dsi_panel *panel)
 			panel->fod_dim_lut[i - 1].alpha, panel->fod_dim_lut[i].alpha);
 }
 
+u32 dsi_panel_get_dc_dim_alpha(struct dsi_panel *panel)
+{
+	u32 alpha;
+
+	mutex_lock(&panel->panel_lock);
+	alpha = panel->dc_dim_alpha;
+	mutex_unlock(&panel->panel_lock);
+
+	return alpha;
+}
+
+static u32 dsi_panel_calc_fod_dim_alpha(struct dsi_panel *panel, u32 bl_level)
+{
+	int i;
+
+	if (!panel->fod_dim_lut)
+		return 0;
+
+	for (i = 0; i < panel->fod_dim_lut_len; i++)
+		if (panel->fod_dim_lut[i].brightness >= bl_level)
+			break;
+
+	if (i == 0)
+		return panel->fod_dim_lut[i].alpha;
+
+	if (i == panel->fod_dim_lut_len)
+		return panel->fod_dim_lut[i - 1].alpha;
+
+	return interpolate(bl_level,
+			   panel->fod_dim_lut[i - 1].brightness,
+			   panel->fod_dim_lut[i].brightness,
+			   panel->fod_dim_lut[i - 1].alpha,
+			   panel->fod_dim_lut[i].alpha);
+}
+
+static u32 dsi_panel_calc_dc_dim_alpha(struct dsi_panel *panel, u32 bl_level)
+{
+	int i;
+
+	if (!panel->dc_dim_lut || !panel->dc_dim)
+		return 0;
+
+	for (i = 0; i < panel->dc_dim_lut_len; i++)
+		if (panel->dc_dim_lut[i].brightness >= bl_level)
+			break;
+
+	if (i == 0)
+		return panel->dc_dim_lut[i].alpha;
+
+	if (i == panel->dc_dim_lut_len)
+		return panel->dc_dim_lut[i - 1].alpha;
+
+	return interpolate(bl_level,
+			   panel->dc_dim_lut[i - 1].brightness,
+			   panel->dc_dim_lut[i].brightness,
+			   panel->dc_dim_lut[i - 1].alpha,
+			   panel->dc_dim_lut[i].alpha);
+}
+
 int dsi_panel_set_fod_hbm(struct dsi_panel *panel, bool status)
 {
 	int rc = 0;
@@ -862,6 +921,28 @@ static int dsi_panel_pwm_register(struct dsi_panel *panel)
 	}
 
 	return 0;
+}
+
+bool dsi_panel_get_fod_ui(struct dsi_panel *panel)
+{
+	return panel->fod_ui;
+}
+
+void dsi_panel_set_fod_ui(struct dsi_panel *panel, bool status)
+{
+	panel->fod_ui = status;
+
+	sysfs_notify(&panel->parent->kobj, NULL, "fod_ui");
+}
+
+bool dsi_panel_get_force_fod_ui(struct dsi_panel *panel)
+{
+	return panel->force_fod_ui;
+}
+
+bool dsi_panel_get_dc_dim(struct dsi_panel *panel)
+{
+	return panel->dc_dim;
 }
 
 static int dsi_panel_bl_register(struct dsi_panel *panel)
@@ -2472,6 +2553,60 @@ count_fail:
 		panel->fod_dim_lut = NULL;
 		panel->fod_dim_lut_count = 0;
 	}
+	return rc;
+}
+
+static int dsi_panel_parse_dc_dim_lut(struct dsi_panel *panel,
+		struct dsi_parser_utils *utils)
+{
+	const char *prop_name = "qcom,disp-dc-dim-lut";
+	unsigned int i;
+	u32 *array;
+	int count;
+	int rc;
+
+	count = utils->count_u32_elems(utils->data, prop_name);
+	if (count <= 0 || count % BRIGHTNESS_ALPHA_PAIR_LEN) {
+		pr_err("[%s] invalid number of elements %d\n",
+			panel->name, count);
+		rc = -EINVAL;
+		goto count_fail;
+	}
+
+	array = kcalloc(count, sizeof(u32), GFP_KERNEL);
+	if (!array) {
+		rc = -ENOMEM;
+		goto alloc_array_fail;
+	}
+
+	rc = utils->read_u32_array(utils->data, prop_name, array, count);
+	if (rc) {
+		pr_err("[%s] failed to read array, rc=%d\n", panel->name, rc);
+		goto read_fail;
+	}
+
+	count /= BRIGHTNESS_ALPHA_PAIR_LEN;
+	panel->dc_dim_lut = kcalloc(count, sizeof(*panel->dc_dim_lut),
+				     GFP_KERNEL);
+	if (!panel->dc_dim_lut) {
+		rc = -ENOMEM;
+		goto alloc_lut_fail;
+	}
+
+	panel->dc_dim_lut_len = count;
+
+	for (i = 0; i < count; i++) {
+		struct brightness_alpha_pair *pair = &panel->dc_dim_lut[i];
+		pair->brightness = array[i * BRIGHTNESS_ALPHA_PAIR_LEN + 0];
+		pair->alpha = array[i * BRIGHTNESS_ALPHA_PAIR_LEN + 1];
+	}
+
+alloc_lut_fail:
+read_fail:
+	kfree(array);
+alloc_array_fail:
+count_fail:
+
 	return rc;
 }
 
