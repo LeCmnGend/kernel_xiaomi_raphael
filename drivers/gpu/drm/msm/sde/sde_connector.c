@@ -626,6 +626,9 @@ void sde_connector_update_hbm(struct drm_connector *connector)
 	mutex_unlock(&display->panel->panel_lock);
 
 	dsi_display_set_fod_ui(display, status);
+
+	if (!status)
+		_sde_connector_update_bl_scale(c_conn);
 }
 
 int sde_connector_pre_kickoff(struct drm_connector *connector)
