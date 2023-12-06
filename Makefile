@@ -763,7 +763,7 @@ ifeq ($(cc-name),clang)
 KBUILD_CFLAGS   += -O3
 #Enable hot cold split optimization
 KBUILD_CFLAGS   += -mllvm -hot-cold-split=true
-KBUILD_CFLAGS	+= -march=armv8.2-a+dotprod -mcpu=cortex-a76+crypto+crc
+KBUILD_CFLAGS	+= -march=armv8.2-a+lse+fp16+dotprod -mcpu=cortex-a76+crypto+crc
 ifdef CONFIG_LLVM_POLLY
 KBUILD_CFLAGS	+= -mllvm -polly \
 		   -mllvm -polly-ast-use-context \
