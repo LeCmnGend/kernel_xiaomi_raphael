@@ -41,8 +41,8 @@ fi
 DEFCONFIG="raphael_defconfig"
 SECONDS=0 # builtin bash timer
 ZIPNAME="FuAnDo-raphael-$(date '+%Y%m%d-%H%M').zip"
-#export PROC="-j$(nproc --all)"
-export PROC="-j13"
+export PROC="-j$(nproc --all)"
+#export PROC="-j13"
 
 # Setup ccache environment
 export USE_CCACHE=1
