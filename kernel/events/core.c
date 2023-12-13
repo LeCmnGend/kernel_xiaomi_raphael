@@ -11458,8 +11458,6 @@ static int inherit_group(struct perf_event *parent_event,
 		if (IS_ERR(child_ctr))
 			return PTR_ERR(child_ctr);
 	}
-	if (leader)
-		leader->group_generation = parent_event->group_generation;
 	return 0;
 }
 
