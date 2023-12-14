@@ -47,7 +47,6 @@ export PROC="-j$(nproc --all)"
 # Setup ccache environment
 export USE_CCACHE=1
 export CCACHE_EXEC=/usr/local/bin/ccache
-export CROSS_COMPILE +="ccache clang"
 
 # Toolchain environtment
 export PATH="$TC_DIR/bin:$PATH" 
