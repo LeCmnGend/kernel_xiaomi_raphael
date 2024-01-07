@@ -41,7 +41,7 @@ fi
 DEFCONFIG="raphael_defconfig"
 SECONDS=0 # builtin bash timer
 ZIPNAME="FuAnDo-raphael-$(date '+%Y%m%d-%H%M').zip"
-export PROC="-j$(nproc --all)"
+export PROC=-j12
 #export PROC="-j13"
 
 # Setup ccache environment
@@ -50,9 +50,9 @@ export CCACHE_EXEC=/usr/local/bin/ccache
 
 # Toolchain environtment
 export PATH="$TC_DIR/bin:$PATH" 
-export THINLTO_CACHE_DIR="/mnt/e/.ccache/ltocache/"
-export KBUILD_COMPILER_STRING="$($TC_DIR/bin/clang --version | head -n 1 | perl -pe 's/\((?:http|git).*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//' -e 's/^.*clang/clang/')"
-export STRIP="$TC_DIR/bin/$(echo "$(find "$TC_DIR/bin" -type f -name "aarch64-*-gcc")" | awk -F '/' '{print $NF}' | sed -e 's/gcc/strip/')"
+export THINLTO_CACHE_DIR="$CCACHE_DIR/ltocache/"
+#export KBUILD_COMPILER_STRING="$($TC_DIR/bin/clang --version | head -n 1 | perl -pe 's/\((?:http|git).*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//' -e 's/^.*clang/clang/')"
+#export STRIP="$TC_DIR/bin/$(echo "$(find "$TC_DIR/bin" -type f -name "aarch64-*-gcc")" | awk -F '/' '{print $NF}' | sed -e 's/gcc/strip/')"
 
 # Kernel Details
 KERNEL_VER="$(date '+%Y%m%d-%H%M')"
