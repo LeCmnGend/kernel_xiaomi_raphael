@@ -128,3 +128,5 @@ kernel/configs/android-*.cfg
 
 # Object directory
 out/
+*.zip
+

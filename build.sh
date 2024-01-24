@@ -9,7 +9,7 @@ restore='\033[0m'
 clear
 
 # Resources
-export CLANG_PATH=~/tc/neutron-clang/bin
+export CLANG_PATH=~/tc/clang/clang-r510928/bin
 export PATH=${CLANG_PATH}:${PATH}
 export THINLTO_CACHE=~/ltocache/
 DEFCONFIG="raphael_defconfig"
@@ -31,7 +31,7 @@ export KBUILD_BUILD_HOST=KREMLIN
 
 # Paths
 KERNEL_DIR=`pwd`
-REPACK_DIR=~/AnyKernel3
+REPACK_DIR=~/tc/AK3
 ZIP_MOVE=~/AK-releases
 
 # Functions
