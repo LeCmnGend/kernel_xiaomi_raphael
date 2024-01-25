@@ -2,21 +2,46 @@
 #
 # Compile script for FuAnDo Raphael kernel
 # Copyright (C) 2020-2021 Adithya R.
-# Copyright (C) 2021-2022 @LeCmnGend.
+# Copyright (C) 2021-2024 @LeCmnGend.
 #
-# Download needed files
-KERNEL_DIR=`pwd`
-TC_BRANCH="clang-15" #clang-r498229b
-TC_DIR="$HOME/tc/proton/$TC_BRANCH"
-TC_URL="https://gitlab.com/lecmngend/proton-clang"
-TC_GIT_BRANCH=$TC_BRANCH
+##############################################################
+## Setup ccache environment
+export USE_CCACHE=1
+export CCACHE_EXEC=/usr/local/bin/ccache
 
-AK3_URL="https://github.com/lecmngend/AnyKernel3"
-AK3_BRANCH="raphael"
-AK3_DIR="$HOME/tc/AK3/$AK3_BRANCH"
+# Toolchain environtment
+export TC_BRANCH="clang-15" #clang-16.0.2
+export TC_DIR="$HOME/tc/clang/$TC_BRANCH"
+export TC_URL="https://gitlab.com/lecmngend/clang"
+export TC_GIT_BRANCH=$TC_BRANCH
+
+export PATH="$TC_DIR/bin:$PATH" 
+export THINLTO_CACHE=$THINLTO_CACHE_DIR
+export CLANG_PATH=$TC_DIR/bin
+#export KBUILD_COMPILER_STRING="$($TC_DIR/bin/clang --version | head -n 1 | perl -pe 's/\((?:http|git).*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//' -e 's/^.*clang/clang/')"
+#export STRIP="$TC_DIR/bin/$(echo "$(find "$TC_DIR/bin" -type f -name "aarch64-*-gcc")" | awk -F '/' '{print $NF}' | sed -e 's/gcc/strip/')"
+
+# Kernel Details
+export KERNEL_DIR=`pwd`
+export KERNEL_VER="$(date '+%Y%m%d-%H%M')"
+export DEFCONFIG="raphael_defconfig"
+export ARCH=arm64
+export SUBARCH=arm64
+export SECONDS=0 # builtin bash timer
+export ZIPNAME="FuAnDo-raphael-$(date '+%Y%m%d-%H%M').zip"
+export PROC=-j4
+
+
+## Setup ZIP flashable detail
+#AnyKernel3 detail
+export AK3_URL="https://github.com/lecmngend/AnyKernel3"
+export AK3_BRANCH="raphael"
+export AK3_DIR="$HOME/tc/AK3/$AK3_BRANCH"
+##############################################################
+
 # Check if toolchain is exist
 if ! [ -d "$TC_DIR" ]; then
-		echo "Proton clang not found! Cloning to $TC_DIR..."
+		echo "Clang Compiler not found! Cloning to $TC_DIR..."
 		if ! git clone --single-branch $TC_URL -b $TC_GIT_BRANCH $TC_DIR --depth=1; then
 				echo "Cloning failed! Aborting..."
 				exit 1
@@ -37,36 +62,42 @@ else
 				cd $KERNEL_DIR
 fi
 
-# Setup environment
-DEFCONFIG="raphael_defconfig"
-SECONDS=0 # builtin bash timer
-ZIPNAME="FuAnDo-raphael-$(date '+%Y%m%d-%H%M').zip"
-export PROC=-j12
-#export PROC="-j13"
-
-# Setup ccache environment
-export USE_CCACHE=1
-export CCACHE_EXEC=/usr/local/bin/ccache
-
-# Toolchain environtment
-export PATH="$TC_DIR/bin:$PATH" 
-export THINLTO_CACHE_DIR="$CCACHE_DIR/ltocache/"
-#export KBUILD_COMPILER_STRING="$($TC_DIR/bin/clang --version | head -n 1 | perl -pe 's/\((?:http|git).*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//' -e 's/^.*clang/clang/')"
-#export STRIP="$TC_DIR/bin/$(echo "$(find "$TC_DIR/bin" -type f -name "aarch64-*-gcc")" | awk -F '/' '{print $NF}' | sed -e 's/gcc/strip/')"
-
-# Kernel Details
-KERNEL_VER="$(date '+%Y%m%d-%H%M')"
-
-clear
-
-
+#Some used function
 function clean_all {
 		cd $KERNEL_DIR
 		echo
 		rm -rf prebuilt
-		rm -rf out && make clean && make mrproper
+		rm -rf out 
+		make clean 
+		make mrproper
 }
 
+# Creating zip flashable file
+function create_zip {
+		#Copy AK3 to out/Anykernel13
+		cp -r $AK3_DIR AnyKernel3
+		cp out/arch/arm64/boot/Image.gz-dtb AnyKernel3
+		#cp out/arch/arm64/boot/dtbo.img AnyKernel3
+
+		# Change dir to AK3 to make zip kernel
+		cd AnyKernel3
+		zip -r9 "../$ZIPNAME" * -x '*.git*' README.md *placeholder
+
+		#Back to out folder and clean
+		cd ..
+		rm -rf AnyKernel3
+		rm -rf out/arch/arm64/boot ##keep boot to compile rom
+		echo -e "\nCompleted in $((SECONDS / 60)) minute(s) and $((SECONDS % 60)) second(s) !"
+		echo "Zip: $ZIPNAME"
+}
+
+function create_prebuilt {
+		#Copy Image.gz and dtbo.img to prebuilt folder
+		mkdir -p prebuilt
+		cp out/arch/arm64/boot/Image.gz-dtb prebuilt
+		cp out/arch/arm64/boot/dtbo.img prebuilt
+}
+##############################################################
 while read -p "Do you want to clean stuffs (y/n)? " cchoice
 do
 case "$cchoice" in
@@ -124,35 +155,6 @@ else
 			CROSS_COMPILE="aarch64-linux-gnu-" \
 			CROSS_COMPILE_ARM32="arm-linux-gnueabi-"
 fi
-
-
-# Creating zip flashable file
-function create_zip {
-		#Copy AK3 to out/Anykernel13
-		cp -r $AK3_DIR AnyKernel3
-		cp out/arch/arm64/boot/Image.gz-dtb AnyKernel3
-		#cp out/arch/arm64/boot/dtbo.img AnyKernel3
-
-		# Change dir to AK3 to make zip kernel
-		cd AnyKernel3
-		zip -r9 "../$ZIPNAME" * -x '*.git*' README.md *placeholder
-
-		#Back to out folder and clean
-		cd ..
-		rm -rf AnyKernel3
-		rm -rf out/arch/arm64/boot ##keep boot to compile rom
-		echo -e "\nCompleted in $((SECONDS / 60)) minute(s) and $((SECONDS % 60)) second(s) !"
-		echo "Zip: $ZIPNAME"
-}
-
-function create_prebuilt {
-		#Copy Image.gz and dtbo.img to prebuilt folder
-		mkdir -p prebuilt
-		cp out/arch/arm64/boot/Image.gz-dtb prebuilt
-		cp out/arch/arm64/boot/dtbo.img prebuilt
-		rm -rf out
-		make clean
-}
 
 if [ -f "out/arch/arm64/boot/Image.gz-dtb" ] && [ -f "out/arch/arm64/boot/dtbo.img" ]; then
 		 echo -e "\nKernel compiled succesfully! Zipping up...\n"
