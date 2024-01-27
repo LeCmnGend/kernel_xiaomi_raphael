@@ -29,7 +29,7 @@ export ARCH=arm64
 export SUBARCH=arm64
 export SECONDS=0 # builtin bash timer
 export ZIPNAME="FuAnDo-raphael-$(date '+%Y%m%d-%H%M').zip"
-export PROC=-j4
+export PROC=-j$(($(nproc) - 1)) # Release 1 process for surfing web
 
 
 ## Setup ZIP flashable detail
